@@ -19,34 +19,33 @@ defined('MOODLE_INTERNAL') || die();
  */
 class qtype_ddmatch_renderer extends qtype_with_combined_feedback_renderer {
 
-    public function head_code(question_attempt $qa) {
-        global $PAGE;
-
-        if ($this->can_use_drag_and_drop()) {
-            $PAGE->requires->js('/question/type/ddmatch/dragdrop.js');
-
-            $PAGE->requires->yui2_lib('yahoo');
-            $PAGE->requires->yui2_lib('event');
-            $PAGE->requires->yui2_lib('dom');
-            $PAGE->requires->yui2_lib('dragdrop');
-            $PAGE->requires->yui2_lib('animation');
-        }
-    }
+    public function head_code(question_attempt $qa) {}
 
     public function formulation_and_controls(question_attempt $qa,
             question_display_options $options) {
-
-        $creator = new formulation_and_controls_select($this, $qa, $options);
+        global $PAGE;
+        
+        $creator = new qtype_ddmatch_formulation_and_controls_select($this, $qa, $options);
         $o = $creator->construct();
 
         if ($this->can_use_drag_and_drop()) {
-            $creator = new formulation_and_controls_dragdrop($this, $qa, $options);
+            $creator = new qtype_ddmatch_formulation_and_controls_dragdrop($this, $qa, $options);
             $creator->construct();
             
-            $initparams = json_encode($creator->get_ddmatch_init_params());
-            $js = "YAHOO.util.Event.onDOMReady(function(){M.ddmatch.Init($initparams);});";
-
-            $o .= html_writer::script($js);
+            $initparams = array($creator->get_ddmatch_init_params());
+            $module = array(
+                'name' => 'qtype_ddmatch',
+                'fullpath' => '/question/type/ddmatch/dragdrop.js',
+                'requires' => array(
+                    'yui2-yahoo',
+                    'yui2-event',
+                    'yui2-dom',
+                    'yui2-dragdrop',
+                    'yui2-animation'
+                ),
+             );
+            
+            $PAGE->requires->js_init_call('M.qtype_ddmatch.init_draggable', $initparams, true, $module);
         }
 
         return $o;
@@ -120,7 +119,7 @@ class qtype_ddmatch_renderer extends qtype_with_combined_feedback_renderer {
 }
 
 
-abstract class formulation_and_controls_base {
+abstract class qtype_ddmatch_formulation_and_controls_base {
     protected $ddmatchrenderer;
     protected $qa;
     protected $options;
@@ -227,7 +226,7 @@ abstract class formulation_and_controls_base {
     }
 }
 
-class formulation_and_controls_select extends formulation_and_controls_base {
+class qtype_ddmatch_formulation_and_controls_select extends qtype_ddmatch_formulation_and_controls_base {
     protected function init_choices() {
         $this->choices = $this->ddmatchrenderer->format_choices($this->qa);
     }
@@ -238,7 +237,7 @@ class formulation_and_controls_select extends formulation_and_controls_base {
     }
 }
 
-class formulation_and_controls_dragdrop extends formulation_and_controls_base {
+class qtype_ddmatch_formulation_and_controls_dragdrop extends qtype_ddmatch_formulation_and_controls_base {
     private $lastpostfix = 0;
     private $selectedids = array();
     private $ablock;
